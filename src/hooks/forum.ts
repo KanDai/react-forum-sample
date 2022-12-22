@@ -1,13 +1,5 @@
 import { atom, useAtom } from 'jotai'
-
-type Post = {
-    id: number
-    name: string
-    content: string
-    password: string
-}
-
-type AddPostRequest = Omit<Post, 'id'>
+import type { Post, AddPostRequest } from '../types/forum'
 
 const getStoragePosts = () => {
     const posts = localStorage.getItem('posts')
