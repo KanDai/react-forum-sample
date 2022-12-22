@@ -7,12 +7,19 @@ export const PostNew = () => {
     const navigate = useNavigate()
     const { addPost } = useForum()
 
-    const handleSubmit = async (poet: AddPostRequest) => {
+    const handleSubmit = async (post: AddPostRequest) => {
         try {
-            await addPost(poet)
+            if (
+                post.name === '' ||
+                post.content === '' ||
+                post.password === ''
+            ) {
+                throw '入力されていない項目があります'
+            }
+            await addPost(post)
             navigate('/')
         } catch (e) {
-            console.error(e)
+            alert(e)
         }
     }
 

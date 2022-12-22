@@ -3,12 +3,20 @@ import type { AddPostRequest } from '../types/forum'
 
 type InputFormProps = {
     type: 'new' | 'edit'
+    name?: string
+    content?: string
     onSubmit: (post: AddPostRequest) => void
+    onDelete?: (password: string) => void
 }
 
-export const InputForm = ({ type, onSubmit }: InputFormProps) => {
-    const [name, setName] = useState('')
-    const [content, setContent] = useState('')
+export const InputForm = ({
+    type,
+    onSubmit,
+    onDelete,
+    ...rest
+}: InputFormProps) => {
+    const [name, setName] = useState(rest.name || '')
+    const [content, setContent] = useState(rest.content || '')
     const [password, setPassword] = useState('')
 
     const handleInputName = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -29,15 +37,26 @@ export const InputForm = ({ type, onSubmit }: InputFormProps) => {
         onSubmit({ name, content, password })
     }
 
+    const handleDelete = () => {
+        if (onDelete) onDelete(password)
+    }
+
     return (
         <div>
             <div>
                 <span>名前</span>
-                <input type="text" onInput={handleInputName} />
+                <input
+                    type="text"
+                    defaultValue={name}
+                    onInput={handleInputName}
+                />
             </div>
             <div>
                 <span>内容</span>
-                <textarea onInput={handleInputContent}></textarea>
+                <textarea
+                    onInput={handleInputContent}
+                    defaultValue={content}
+                ></textarea>
             </div>
             <div>
                 <span>パスワード</span>
@@ -45,8 +64,13 @@ export const InputForm = ({ type, onSubmit }: InputFormProps) => {
             </div>
             <div>
                 <button type="button" onClick={handleSubmit}>
-                    投稿
+                    {type === 'new' ? '投稿' : '編集'}
                 </button>
+                {type === 'edit' && (
+                    <button type="button" onClick={handleDelete}>
+                        削除
+                    </button>
+                )}
             </div>
         </div>
     )
