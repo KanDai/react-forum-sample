@@ -1,5 +1,5 @@
 import { createBrowserRouter } from 'react-router-dom'
-import { Root } from './pages'
+import { Root } from './pages/Index'
 import { PostNew } from './pages/PostNew'
 import { PostEditor } from './pages/PostEditor'
 
