@@ -1,70 +1,94 @@
 import { atom, useAtom } from 'jotai'
-import type { Post, AddPostRequest } from '../types/forum'
+import type { Post, GetPostResponse, AddPostRequest } from '../types/forum'
+import { apiClient } from '../lib/apiClient'
+import { useState } from 'react'
 
-const getStoragePosts = () => {
-    const posts = localStorage.getItem('posts')
-    return posts ? JSON.parse(posts) : []
-}
-const storagePosts: Post[] = getStoragePosts()
-
-const postsState = atom<Post[]>(storagePosts)
+const postsState = atom<GetPostResponse[]>([])
+const listUpdateState = atom(true)
 
 export const useForum = () => {
     const [posts, setPosts] = useAtom(postsState)
+    const [isLoading, setIsLoading] = useState(false)
+    const [isListUpdate, setIsListUpdate] = useAtom(listUpdateState)
+
+    const getPosts = async () => {
+        if (!isListUpdate) return
+        try {
+            setIsLoading(true)
+            const posts = await apiClient.get<GetPostResponse[]>('/forum')
+            setPosts(posts.data)
+            setIsListUpdate(false)
+        } catch (error) {
+            throw error
+        } finally {
+            setIsLoading(false)
+        }
+    }
 
     const getPost = async (id: number) => {
-        const post = posts.find((p) => p.id === id)
-        if (!post) {
-            throw new Error('Post not found')
+        if (posts.length) {
+            const post = posts.find((p) => p.id === id)
+            if (post) return post
         }
-        return {
-            name: post.name,
-            content: post.content,
+
+        try {
+            setIsLoading(true)
+            const post = await apiClient.get<GetPostResponse>(`/forum/${id}`)
+            if (post.data) return post.data
+        } catch (error) {
+            throw error
+        } finally {
+            setIsLoading(false)
         }
     }
 
     const addPost = async (post: AddPostRequest) => {
-        const newPost = {
-            ...post,
-            id: posts.length ? posts[posts.length - 1].id + 1 : 1,
+        try {
+            setIsLoading(true)
+            await apiClient.post('/forum', post)
+            setIsListUpdate(true)
+        } catch (error) {
+            throw error
+        } finally {
+            setIsLoading(false)
         }
-        setPosts((posts) => [...posts, newPost])
-        localStorage.setItem('posts', JSON.stringify([...posts, newPost]))
     }
 
     const editPost = async (post: Post) => {
-        const currentPostIndex = posts.findIndex((p) => p.id === post.id)
-
-        if (currentPostIndex === -1) {
-            throw 'Post not found'
+        try {
+            setIsLoading(true)
+            const { name, content, password } = post
+            await apiClient.put(`/forum/${post.id}`, {
+                name,
+                content,
+                password,
+            })
+            setIsListUpdate(true)
+        } catch (error) {
+            throw error
+        } finally {
+            setIsLoading(false)
         }
-        if (post.password !== posts[currentPostIndex].password) {
-            throw 'パスワードが一致しません'
-        }
-
-        posts[currentPostIndex].name = post.name
-        posts[currentPostIndex].content = post.content
-        setPosts((posts) => [...posts])
-        localStorage.setItem('posts', JSON.stringify([...posts]))
     }
 
     const deletePost = async (id: number, password: string) => {
-        const currentPostIndex = posts.findIndex((p) => p.id === id)
-
-        if (currentPostIndex === -1) {
-            throw 'Post not found'
+        try {
+            setIsLoading(true)
+            await apiClient.delete(`/forum/${id}`, {
+                data: { password },
+            })
+            setIsListUpdate(true)
+        } catch (error) {
+            throw error
+        } finally {
+            setIsLoading(false)
         }
-        if (password !== posts[currentPostIndex].password) {
-            throw 'パスワードが一致しません'
-        }
-
-        posts.splice(currentPostIndex, 1)
-        setPosts((posts) => [...posts])
-        localStorage.setItem('posts', JSON.stringify([...posts]))
     }
 
     return {
         posts,
+        isLoading,
+        getPosts,
         getPost,
         addPost,
         editPost,

@@ -7,16 +7,21 @@ import type { AddPostRequest, GetPostResponse } from '../types/forum'
 export const PostEditor = () => {
     const navigate = useNavigate()
     const { id } = useParams()
-    const { getPost, editPost, deletePost } = useForum()
+    const { isLoading, getPost, editPost, deletePost } = useForum()
     const [currentPost, setCurrenPost] = useState<GetPostResponse | null>(null)
+    const [is404, setIs404] = useState(false)
 
     const init = async () => {
-        if (!id) {
-            return
+        try {
+            if (!id) {
+                return
+            }
+            const res = await getPost(Number(id))
+            if (!res) return
+            setCurrenPost(res)
+        } catch (e) {
+            setIs404(true)
         }
-        const res = await getPost(Number(id))
-        if (!res) return
-        setCurrenPost(res)
     }
 
     useEffect(() => {
@@ -25,45 +30,46 @@ export const PostEditor = () => {
 
     const handleSubmit = async (post: AddPostRequest) => {
         try {
-            if (!id) {
-                throw new Error('id is undefined')
-            }
             const editablePost = {
                 ...post,
                 id: Number(id),
             }
-
             await editPost(editablePost)
             navigate('/')
         } catch (e) {
-            alert(e)
+            console.error(e)
         }
     }
 
     const handleDelete = async (password: string) => {
         try {
-            if (!id) {
-                throw new Error('id is undefined')
-            }
-
             await deletePost(Number(id), password)
             navigate('/')
         } catch (e) {
-            alert(e)
+            console.error(e)
         }
     }
 
     return (
         <div>
             <h1>Edit</h1>
-            {currentPost && (
-                <InputForm
-                    type="edit"
-                    name={currentPost.name}
-                    content={currentPost.content}
-                    onSubmit={handleSubmit}
-                    onDelete={handleDelete}
-                />
+
+            {isLoading ? (
+                <div>loading...</div>
+            ) : is404 ? (
+                <div>404 Not Found</div>
+            ) : (
+                <>
+                    {currentPost && (
+                        <InputForm
+                            type="edit"
+                            name={currentPost.name}
+                            content={currentPost.content}
+                            onSubmit={handleSubmit}
+                            onDelete={handleDelete}
+                        />
+                    )}
+                </>
             )}
             <div>
                 <Link to="/">Back</Link>
