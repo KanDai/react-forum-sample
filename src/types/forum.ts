@@ -7,4 +7,4 @@ export type Post = {
 
 export type AddPostRequest = Omit<Post, 'id'>
 
-export type GetPostResponse = Omit<Post, 'id' | 'password'>
+export type GetPostResponse = Omit<Post, 'password'>
